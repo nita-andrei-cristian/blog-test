@@ -136,8 +136,28 @@ export function getPost(req, res) {
 }
 
 export function getRecommendedPosts(req, res) {
-  const user = req.session?.user?.name;
-  const posts = GetUserPreferredPosts(user);
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(20, parseInt(req.query.limit) || 10);
+  const queue = (req.query.q || "").toLowerCase();
 
-  return res.json({ posts });
+  const start = (page - 1) * limit;
+  const end = page * limit;
+
+  const user = req.session?.user?.name;
+  var results = GetUserPreferredPosts(user);
+
+  if (queue.length > 0){
+    results = results.filter(post =>
+      post.title.toLowerCase().includes(queue.toLowerCase()) ||
+      post.content.toLowerCase().includes(queue.toLowerCase()) ||
+      post.tags.join(" ").toLowerCase().includes(queue.toLowerCase()) 
+    );
+  }
+
+  return res.json({
+    page,
+    limit,
+    total: { posts: results.length, pages: Math.ceil(results.length / limit) },
+    posts: results.slice(start, end),
+  });
 }

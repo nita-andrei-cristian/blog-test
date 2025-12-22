@@ -7,13 +7,14 @@
     "dev": "concurrently \"node server/index.js\" \"vite\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js", 
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "preview": "vite preview"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
     "express-session": "^1.18.2",
     "jest": "^30.2.0",
     "react": "^19.2.0",

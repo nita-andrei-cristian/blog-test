@@ -8,6 +8,8 @@ function protectedRoute(req, res, next) {
   next();
 }
 
+
+
 router.get("/user", protectedRoute, getUser);
 router.get("/get-user-data", protectedRoute, getUserData);
 router.get("/status", protectedRoute, getStatus);
