@@ -1,0 +1,28 @@
+{
+  "Nita": {
+    "nature": 130,
+    "gardening": 94,
+    "home": 96,
+    "food": 92,
+    "soil": 2,
+    "sustainability": 2,
+    "city": 34,
+    "history": 34,
+    "infrastructure": 34,
+    "outdoors": 2,
+    "navigation": 2,
+    "astronomy": 2,
+    "repair": 2,
+    "tools": 2,
+    "craft": 2,
+    "design": 2,
+    "reading": 2,
+    "comfort": 2
+  },
+  "Marian": {
+    "repair": 2,
+    "tools": 2,
+    "home": 2,
+    "craft": 2
+  }
+}

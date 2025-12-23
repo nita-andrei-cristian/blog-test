@@ -2,8 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import USERS from "../databases/users.js";
-import VISITS from "../databases/visits.js";
+import { readUsers, writeUsers } from "../databases/users.js";
+import { readVisits, writeVisits } from "../databases/visits.js";
+import { readJsonFile, writeJsonFile } from "../databases/json-file.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,7 +21,7 @@ export function GetPosts() {
   const posts = files.map((file) => {
     const content = fs.readFileSync(path.join(DIRECTORY, file), "utf-8");
 
-    return JSON.parse(content);
+    return { file_name: file, ...JSON.parse(content) };
   });
   CACHED_POSTS.push(...posts);
 
@@ -33,33 +34,52 @@ export function GetPostsByTag(tag) {
 }
 
 export function RegisterVisit(user, tags) {
-  if (!USERS.hasOwnProperty(user)) {
-    USERS[user] = {};
+  const users = readUsers();
+  const visits = readVisits();
+
+  if (!users.hasOwnProperty(user)) {
+    users[user] = {};
   }
 
-  if (!VISITS.hasOwnProperty(user)) VISITS[user] = {};
+  if (!visits.hasOwnProperty(user)) visits[user] = {};
 
   console.log("User visit registered!");
   tags.forEach((tag) => {
-    if (!VISITS[user].hasOwnProperty(tag)) VISITS[user][tag] = 0;
-    VISITS[user][tag]++;
+    if (!visits[user].hasOwnProperty(tag)) visits[user][tag] = 0;
+    visits[user][tag]++;
   });
+
+  writeUsers(users);
+  writeVisits(visits);
 
   return { status: 200, message: "visit has been registered" };
 }
 
 export function GetUserPrefferedPosts(user) {
-  console.log(VISITS);
+  const users = readUsers();
+  const visits = readVisits();
+  let usersDirty = false;
+  let visitsDirty = false;
+
+  console.log(visits);
 
   if (!user) {
     return GetPosts();
   }
-  if (!USERS.hasOwnProperty(user)) {
-    USERS[user] = {};
+  if (!users.hasOwnProperty(user)) {
+    users[user] = {};
+    usersDirty = true;
   }
 
-  if (!VISITS.hasOwnProperty(user)) VISITS[user] = {};
-  const tags = Object.entries(VISITS[user])
+  if (!visits.hasOwnProperty(user)) {
+    visits[user] = {};
+    visitsDirty = true;
+  }
+
+  if (usersDirty) writeUsers(users);
+  if (visitsDirty) writeVisits(visits);
+
+  const tags = Object.entries(visits[user])
     .sort((a, b) => b[1] - a[1])
     .map(([tag]) => tag);
 
@@ -89,9 +109,10 @@ export function GetUserPrefferedPosts(user) {
 
 export function GetUserPreferredPosts(user) {
   if (!user) return GetPosts();
-  if (!VISITS[user]) return GetPosts();
+  const visits = readVisits();
+  if (!visits[user]) return GetPosts();
 
-  const tags = Object.entries(VISITS[user])
+  const tags = Object.entries(visits[user])
     .sort((a, b) => b[1] - a[1])
     .map(([tag]) => tag);
   if (tags.length === 0) return GetPosts();
@@ -146,11 +167,12 @@ export function getRecommendedPosts(req, res) {
   const user = req.session?.user?.name;
   var results = GetUserPreferredPosts(user);
 
-  if (queue.length > 0){
-    results = results.filter(post =>
-      post.title.toLowerCase().includes(queue.toLowerCase()) ||
-      post.content.toLowerCase().includes(queue.toLowerCase()) ||
-      post.tags.join(" ").toLowerCase().includes(queue.toLowerCase()) 
+  if (queue.length > 0) {
+    results = results.filter(
+      (post) =>
+        post.title.toLowerCase().includes(queue.toLowerCase()) ||
+        post.content.toLowerCase().includes(queue.toLowerCase()) ||
+        post.tags.join(" ").toLowerCase().includes(queue.toLowerCase()),
     );
   }
 
@@ -160,4 +182,29 @@ export function getRecommendedPosts(req, res) {
     total: { posts: results.length, pages: Math.ceil(results.length / limit) },
     posts: results.slice(start, end),
   });
+}
+
+export function registerComment(post_file, content, user_name) {
+  const DIRECTORY = path.join(__dirname, "..", "..", "public", "posts");
+  const path_file = path.join(DIRECTORY, post_file);
+  const post = GetPosts().find((p) => p.file_name == post_file);
+
+  if (post) {
+    if (!post.comments) {
+      post.comments = [];
+    }
+
+    post.comments.push({
+      content,
+      user: user_name,
+      date: new Date().toLocaleDateString("ro-RO", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      }),
+    });
+    writeJsonFile(path_file, post);
+    return post.comments;
+  }
+  return [];
 }

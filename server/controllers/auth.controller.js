@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 
-import USERS from "../databases/users.js";
+import { readUsers, writeUsers } from "../databases/users.js";
+import { doesUserExist } from "../services/user.service.js";
 
 const SALT_ROUNDS = 10;
 
@@ -11,16 +12,19 @@ export async function register(req, res) {
     return res.status(400).json({ message: "missing credentials" });
   }
 
-  if (USERS[user]?.passwordHash) {
+  const users = readUsers();
+
+  if (doesUserExist(user)) {
     return res.status(409).json({ message: "user already exists" });
   }
 
   const passwordHash = await bcrypt.hash(pass, SALT_ROUNDS);
 
-  USERS[user] = {
-    ...USERS[user],
+  users[user] = {
+    ...users[user],
     passwordHash,
   };
+  writeUsers(users);
 
   req.session.user = { name: user };
 
@@ -34,7 +38,8 @@ export async function login(req, res) {
     return res.status(400).json({ message: "missing credentials" });
   }
 
-  const account = USERS[user];
+  const users = readUsers();
+  const account = users[user];
 
   if (!account?.passwordHash) {
     return res.status(401).json({ message: "invalid credentials" });

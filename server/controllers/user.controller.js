@@ -1,4 +1,4 @@
-import VISITS from "../databases/visits.js";
+import { readVisits, writeVisits } from "../databases/visits.js";
 
 export function getUser(req, res) {
   res.json(req.session.user);
@@ -9,11 +9,14 @@ export function getUserData(req, res) {
 
   const user = session.user.name;
 
-  if (!VISITS[user]) {
-    VISITS[user] = {};
+  const visits = readVisits();
+
+  if (!visits[user]) {
+    visits[user] = {};
+    writeVisits(visits);
   }
 
-  return res.json({ visits: VISITS[user], isLogged : true, name : user });
+  return res.json({ visits: visits[user], isLogged : true, name : user });
 }
 
 export function getStatus(req, res) {
@@ -22,4 +25,3 @@ export function getStatus(req, res) {
     user: req.session.user || null,
   });
 }
-
