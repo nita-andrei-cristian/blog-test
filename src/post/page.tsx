@@ -82,7 +82,7 @@ export default function PostPage() {
           >
             <p>{comment.content}</p>
             <p>
-              <span className="font-bold">~{comment.user.name} </span>
+              <span className="bold">~{comment.user.name} </span>
               <span className="ml-2"> at {comment.date}</span>
             </p>
           </div>
